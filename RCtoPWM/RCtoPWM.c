@@ -158,7 +158,7 @@ int main(void)
 			}
 			else
 			{
-				pwm_hi = 256 - pwm_x2;
+				pwm_hi = pwm_x2;
 				PORTB |= (1<<PINB6); //BACKWARD
 			}
 		#else

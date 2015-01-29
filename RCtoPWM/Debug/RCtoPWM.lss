@@ -3,27 +3,27 @@ RCtoPWM.elf:     file format elf32-avr
 
 Sections:
 Idx Name          Size      VMA       LMA       File off  Algn
-  0 .text         0000023e  00000000  00000000  00000074  2**1
+  0 .text         0000023c  00000000  00000000  00000074  2**1
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  1 .bss          00000007  00800100  00800100  000002b2  2**0
+  1 .bss          00000007  00800100  00800100  000002b0  2**0
                   ALLOC
-  2 .comment      00000030  00000000  00000000  000002b2  2**0
+  2 .comment      00000030  00000000  00000000  000002b0  2**0
                   CONTENTS, READONLY
-  3 .debug_aranges 00000030  00000000  00000000  000002e2  2**0
+  3 .debug_aranges 00000030  00000000  00000000  000002e0  2**0
                   CONTENTS, READONLY, DEBUGGING
-  4 .debug_info   00000110  00000000  00000000  00000312  2**0
+  4 .debug_info   00000110  00000000  00000000  00000310  2**0
                   CONTENTS, READONLY, DEBUGGING
-  5 .debug_abbrev 00000083  00000000  00000000  00000422  2**0
+  5 .debug_abbrev 00000083  00000000  00000000  00000420  2**0
                   CONTENTS, READONLY, DEBUGGING
-  6 .debug_line   00000104  00000000  00000000  000004a5  2**0
+  6 .debug_line   00000104  00000000  00000000  000004a3  2**0
                   CONTENTS, READONLY, DEBUGGING
-  7 .debug_frame  00000070  00000000  00000000  000005ac  2**2
+  7 .debug_frame  00000070  00000000  00000000  000005a8  2**2
                   CONTENTS, READONLY, DEBUGGING
-  8 .debug_str    0000016e  00000000  00000000  0000061c  2**0
+  8 .debug_str    0000016e  00000000  00000000  00000618  2**0
                   CONTENTS, READONLY, DEBUGGING
-  9 .debug_loc    00000092  00000000  00000000  0000078a  2**0
+  9 .debug_loc    00000092  00000000  00000000  00000786  2**0
                   CONTENTS, READONLY, DEBUGGING
- 10 .debug_ranges 00000020  00000000  00000000  0000081c  2**0
+ 10 .debug_ranges 00000020  00000000  00000000  00000818  2**0
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -81,7 +81,7 @@ Disassembly of section .text:
   8c:	b2 07       	cpc	r27, r18
   8e:	e1 f7       	brne	.-8      	; 0x88 <.do_clear_bss_loop>
   90:	0e 94 98 00 	call	0x130	; 0x130 <main>
-  94:	0c 94 1d 01 	jmp	0x23a	; 0x23a <_exit>
+  94:	0c 94 1c 01 	jmp	0x238	; 0x238 <_exit>
 
 00000098 <__bad_interrupt>:
   98:	0c 94 00 00 	jmp	0	; 0x0 <__vectors>
@@ -365,31 +365,30 @@ int main(void)
  218:	80 93 02 01 	sts	0x0102, r24
 				PORTB &= ~(1<<PINB6); //FORWARD
  21c:	2e 98       	cbi	0x05, 6	; 5
- 21e:	08 c0       	rjmp	.+16     	; 0x230 <main+0x100>
+ 21e:	07 c0       	rjmp	.+14     	; 0x22e <main+0xfe>
 			}
 			else
 			{
-				pwm_hi = 256 - pwm_x2;
+				pwm_hi = pwm_x2;
  220:	80 91 00 01 	lds	r24, 0x0100
  224:	90 91 01 01 	lds	r25, 0x0101
- 228:	81 95       	neg	r24
- 22a:	80 93 02 01 	sts	0x0102, r24
+ 228:	80 93 02 01 	sts	0x0102, r24
 				PORTB |= (1<<PINB6); //BACKWARD
- 22e:	2e 9a       	sbi	0x05, 6	; 5
+ 22c:	2e 9a       	sbi	0x05, 6	; 5
 		#else
 			pwm_hi = pwm_x2 >> 1; //div 2					
 		#endif
 		
 		//PWM output inverted
 		OCR0A = 255 - pwm_hi;
- 230:	80 91 02 01 	lds	r24, 0x0102
- 234:	80 95       	com	r24
- 236:	87 bd       	out	0x27, r24	; 39
+ 22e:	80 91 02 01 	lds	r24, 0x0102
+ 232:	80 95       	com	r24
+ 234:	87 bd       	out	0x27, r24	; 39
     }
- 238:	9e cf       	rjmp	.-196    	; 0x176 <main+0x46>
+ 236:	9f cf       	rjmp	.-194    	; 0x176 <main+0x46>
 
-0000023a <_exit>:
- 23a:	f8 94       	cli
+00000238 <_exit>:
+ 238:	f8 94       	cli
 
-0000023c <__stop_program>:
- 23c:	ff cf       	rjmp	.-2      	; 0x23c <__stop_program>
+0000023a <__stop_program>:
+ 23a:	ff cf       	rjmp	.-2      	; 0x23a <__stop_program>

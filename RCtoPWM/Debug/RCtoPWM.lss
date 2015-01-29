@@ -3,27 +3,27 @@ RCtoPWM.elf:     file format elf32-avr
 
 Sections:
 Idx Name          Size      VMA       LMA       File off  Algn
-  0 .text         000001e0  00000000  00000000  00000074  2**1
+  0 .text         0000023e  00000000  00000000  00000074  2**1
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  1 .bss          00000006  00800100  00800100  00000254  2**0
+  1 .bss          00000007  00800100  00800100  000002b2  2**0
                   ALLOC
-  2 .comment      00000030  00000000  00000000  00000254  2**0
+  2 .comment      00000030  00000000  00000000  000002b2  2**0
                   CONTENTS, READONLY
-  3 .debug_aranges 00000030  00000000  00000000  00000284  2**0
+  3 .debug_aranges 00000030  00000000  00000000  000002e2  2**0
                   CONTENTS, READONLY, DEBUGGING
-  4 .debug_info   000000f9  00000000  00000000  000002b4  2**0
+  4 .debug_info   00000110  00000000  00000000  00000312  2**0
                   CONTENTS, READONLY, DEBUGGING
-  5 .debug_abbrev 00000083  00000000  00000000  000003ad  2**0
+  5 .debug_abbrev 00000083  00000000  00000000  00000422  2**0
                   CONTENTS, READONLY, DEBUGGING
-  6 .debug_line   000000fa  00000000  00000000  00000430  2**0
+  6 .debug_line   00000104  00000000  00000000  000004a5  2**0
                   CONTENTS, READONLY, DEBUGGING
-  7 .debug_frame  00000070  00000000  00000000  0000052c  2**2
+  7 .debug_frame  00000070  00000000  00000000  000005ac  2**2
                   CONTENTS, READONLY, DEBUGGING
-  8 .debug_str    00000167  00000000  00000000  0000059c  2**0
+  8 .debug_str    0000016e  00000000  00000000  0000061c  2**0
                   CONTENTS, READONLY, DEBUGGING
-  9 .debug_loc    00000092  00000000  00000000  00000703  2**0
+  9 .debug_loc    00000092  00000000  00000000  0000078a  2**0
                   CONTENTS, READONLY, DEBUGGING
- 10 .debug_ranges 00000020  00000000  00000000  00000795  2**0
+ 10 .debug_ranges 00000020  00000000  00000000  0000081c  2**0
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -77,19 +77,19 @@ Disassembly of section .text:
   88:	1d 92       	st	X+, r1
 
 0000008a <.do_clear_bss_start>:
-  8a:	a6 30       	cpi	r26, 0x06	; 6
+  8a:	a7 30       	cpi	r26, 0x07	; 7
   8c:	b2 07       	cpc	r27, r18
   8e:	e1 f7       	brne	.-8      	; 0x88 <.do_clear_bss_loop>
   90:	0e 94 98 00 	call	0x130	; 0x130 <main>
-  94:	0c 94 ee 00 	jmp	0x1dc	; 0x1dc <_exit>
+  94:	0c 94 1d 01 	jmp	0x23a	; 0x23a <_exit>
 
 00000098 <__bad_interrupt>:
   98:	0c 94 00 00 	jmp	0	; 0x0 <__vectors>
 
 0000009c <__vector_18>:
-volatile uint16_t pulse_hi;
 volatile uint16_t pulse_low;
-volatile uint16_t pwm_hi;
+volatile uint16_t pwm_x2;
+volatile uint8_t  pwm_hi;
 
 //Interrupt on RC signal lost (timer1 overflow)
 ISR(TIMER1_OVF_vect) {
@@ -99,11 +99,11 @@ ISR(TIMER1_OVF_vect) {
   a2:	0f 92       	push	r0
   a4:	11 24       	eor	r1, r1
 	pulse_low = 0;
-  a6:	10 92 05 01 	sts	0x0105, r1
-  aa:	10 92 04 01 	sts	0x0104, r1
+  a6:	10 92 06 01 	sts	0x0106, r1
+  aa:	10 92 05 01 	sts	0x0105, r1
 	pulse_hi = 0;
-  ae:	10 92 03 01 	sts	0x0103, r1
-  b2:	10 92 02 01 	sts	0x0102, r1
+  ae:	10 92 04 01 	sts	0x0104, r1
+  b2:	10 92 03 01 	sts	0x0103, r1
 }
   b6:	0f 90       	pop	r0
   b8:	0f be       	out	0x3f, r0	; 63
@@ -124,10 +124,6 @@ ISR(TIMER1_CAPT_vect) {
   cc:	9f 93       	push	r25
   ce:	ef 93       	push	r30
   d0:	ff 93       	push	r31
-	//mesured_width.byte[0] = ICR1L;	// grab captured timer1 low byte
-	//mesured_width.byte[1] = ICR1H;	// grab captured timer1 high byte
-	//mesured_width = ICR1;
-	
 	//Check state of input
 	if (PINC & (1<<PC7))
   d2:	37 9b       	sbis	0x06, 7	; 6
@@ -148,8 +144,8 @@ ISR(TIMER1_CAPT_vect) {
 		pulse_low = ICR1;
   e0:	80 91 86 00 	lds	r24, 0x0086
   e4:	90 91 87 00 	lds	r25, 0x0087
-  e8:	90 93 05 01 	sts	0x0105, r25
-  ec:	80 93 04 01 	sts	0x0104, r24
+  e8:	90 93 06 01 	sts	0x0106, r25
+  ec:	80 93 05 01 	sts	0x0105, r24
   f0:	0d c0       	rjmp	.+26     	; 0x10c <__vector_14+0x4c>
 	{
 		//New state is LOW
@@ -167,8 +163,8 @@ ISR(TIMER1_CAPT_vect) {
 		pulse_hi = ICR1;
   fc:	80 91 86 00 	lds	r24, 0x0086
  100:	90 91 87 00 	lds	r25, 0x0087
- 104:	90 93 03 01 	sts	0x0103, r25
- 108:	80 93 02 01 	sts	0x0102, r24
+ 104:	90 93 04 01 	sts	0x0104, r25
+ 108:	80 93 03 01 	sts	0x0103, r24
 	}
 	//Reset counter
 	TCNT1 = 0;
@@ -193,146 +189,207 @@ ISR(TIMER1_CAPT_vect) {
  12e:	18 95       	reti
 
 00000130 <main>:
+
+int main(void)
+{
+	//Rotation direction
+	//Out to PB6
+	DDRB |= (1<<PINB6);
+ 130:	26 9a       	sbi	0x04, 6	; 4
+	//Default 0 - forward
+	PORTB &= ~(1<<PINB6);
+ 132:	2e 98       	cbi	0x05, 6	; 5
 	
 	//TIMER0
 	
 	//Start PWM
 	//Out to PB7 (OC0A)
 	DDRB |= (1<<PINB7 );
- 130:	27 9a       	sbi	0x04, 7	; 4
+ 134:	27 9a       	sbi	0x04, 7	; 4
 		
 	//Timer 0 to Fast PWM with output to OC0A
 	TCCR0A = (1 << COM0A1) | (1 << COM0A0) | (1 << WGM00) | (1 << WGM01) | (0 << WGM02);
- 132:	83 ec       	ldi	r24, 0xC3	; 195
- 134:	84 bd       	out	0x24, r24	; 36
+ 136:	83 ec       	ldi	r24, 0xC3	; 195
+ 138:	84 bd       	out	0x24, r24	; 36
 		
 	//Set prescaler to div by 1
 	TCCR0B |= (0 << CS02) | (1 << CS01) | (1 << CS00);
- 136:	85 b5       	in	r24, 0x25	; 37
- 138:	83 60       	ori	r24, 0x03	; 3
- 13a:	85 bd       	out	0x25, r24	; 37
+ 13a:	85 b5       	in	r24, 0x25	; 37
+ 13c:	83 60       	ori	r24, 0x03	; 3
+ 13e:	85 bd       	out	0x25, r24	; 37
 			
 	TCNT0 = 0;
- 13c:	16 bc       	out	0x26, r1	; 38
+ 140:	16 bc       	out	0x26, r1	; 38
 	
-	//PWM duty 50%
-	OCR0A = 127;
- 13e:	8f e7       	ldi	r24, 0x7F	; 127
- 140:	87 bd       	out	0x27, r24	; 39
-		
+	//PWM duty 0% (out inverted)
+	OCR0A = 255;
+ 142:	8f ef       	ldi	r24, 0xFF	; 255
+ 144:	87 bd       	out	0x27, r24	; 39
 		
 	//TIMER1
 	//In on PC7 (ICP1)
-	DDRC = 0;
- 142:	17 b8       	out	0x07, r1	; 7
+	DDRC &= ~(1 << PINC7);
+ 146:	3f 98       	cbi	0x07, 7	; 7
+	//Enable internal pull up
+	PORTC |= (1 << PINC7);
+ 148:	47 9a       	sbi	0x08, 7	; 8
 	
 	//Normal mode
 	TCCR1A = 0;
- 144:	10 92 80 00 	sts	0x0080, r1
+ 14a:	10 92 80 00 	sts	0x0080, r1
 	
 	//Nose canceler
 	//Timer Capture on Falling Edge
 	//Timer speed 16Mhz div 8
 	TCCR1B = (1 << ICNC1) | (0 << ICES1 ) | (0 << CS12) | (1 << CS11) | (0 << CS10);
- 148:	82 e8       	ldi	r24, 0x82	; 130
- 14a:	80 93 81 00 	sts	0x0081, r24
+ 14e:	82 e8       	ldi	r24, 0x82	; 130
+ 150:	80 93 81 00 	sts	0x0081, r24
 	
 	//Reset counter
 	TCNT1 = 0;
- 14e:	10 92 85 00 	sts	0x0085, r1
- 152:	10 92 84 00 	sts	0x0084, r1
+ 154:	10 92 85 00 	sts	0x0085, r1
+ 158:	10 92 84 00 	sts	0x0084, r1
 	
 	//Reset capture
 	ICR1 = 0x0000;
- 156:	10 92 87 00 	sts	0x0087, r1
- 15a:	10 92 86 00 	sts	0x0086, r1
+ 15c:	10 92 87 00 	sts	0x0087, r1
+ 160:	10 92 86 00 	sts	0x0086, r1
 		
 	//Turn on interrupts
 	sei();
- 15e:	78 94       	sei
+ 164:	78 94       	sei
 	
 	//Turn on interrupt by ICP and overflow
 	TIMSK1 |= (1 << ICIE1) | (1 << TOIE1);
- 160:	ef e6       	ldi	r30, 0x6F	; 111
- 162:	f0 e0       	ldi	r31, 0x00	; 0
- 164:	80 81       	ld	r24, Z
- 166:	81 62       	ori	r24, 0x21	; 33
- 168:	80 83       	st	Z, r24
+ 166:	ef e6       	ldi	r30, 0x6F	; 111
+ 168:	f0 e0       	ldi	r31, 0x00	; 0
+ 16a:	80 81       	ld	r24, Z
+ 16c:	81 62       	ori	r24, 0x21	; 33
+ 16e:	80 83       	st	Z, r24
 	
 	//Reset interrupt flag
 	TIFR1 |= (1 << ICF1);
- 16a:	b5 9a       	sbi	0x16, 5	; 22
+ 170:	b5 9a       	sbi	0x16, 5	; 22
+		//MAX 3000us -> 511  - full forward  (for reverse and not)
+		//check signal for validity
+		if (pulse_hi < RC_min)
+			pwm_x2 = 0;
+		else if (pulse_hi > RC_max)
+			pwm_x2 = 511;
+ 172:	2f ef       	ldi	r18, 0xFF	; 255
+ 174:	31 e0       	ldi	r19, 0x01	; 1
 		
-		//Calculate new PWN duty
-		pwm_hi = ((pulse_hi - 2000) / 8);
-		
-		if (pwm_hi > 255)
-			pwm_hi = 255;
- 16c:	2f ef       	ldi	r18, 0xFF	; 255
- 16e:	30 e0       	ldi	r19, 0x00	; 0
-	
-		
+	//Main program loop
     while(1)
     {
 		//Reset watchdog
 		wdt_reset(); 
- 170:	a8 95       	wdr
+ 176:	a8 95       	wdr
+		//Calculate RC signal to PWMx2 scale
+		//MIN 1000us -> 0    - full backward for reverse, neutral for noreverse
+		//MID 1500us -> 255  - neutral for reverse, moddle for noreverse
+		//MAX 3000us -> 511  - full forward  (for reverse and not)
+		//check signal for validity
+		if (pulse_hi < RC_min)
+ 178:	80 91 03 01 	lds	r24, 0x0103
+ 17c:	90 91 04 01 	lds	r25, 0x0104
+ 180:	80 3d       	cpi	r24, 0xD0	; 208
+ 182:	97 40       	sbci	r25, 0x07	; 7
+ 184:	28 f4       	brcc	.+10     	; 0x190 <main+0x60>
+			pwm_x2 = 0;
+ 186:	10 92 01 01 	sts	0x0101, r1
+ 18a:	10 92 00 01 	sts	0x0100, r1
+ 18e:	2d c0       	rjmp	.+90     	; 0x1ea <main+0xba>
+		else if (pulse_hi > RC_max)
+ 190:	80 91 03 01 	lds	r24, 0x0103
+ 194:	90 91 04 01 	lds	r25, 0x0104
+ 198:	81 3a       	cpi	r24, 0xA1	; 161
+ 19a:	9f 40       	sbci	r25, 0x0F	; 15
+ 19c:	28 f0       	brcs	.+10     	; 0x1a8 <main+0x78>
+			pwm_x2 = 511;
+ 19e:	30 93 01 01 	sts	0x0101, r19
+ 1a2:	20 93 00 01 	sts	0x0100, r18
+ 1a6:	21 c0       	rjmp	.+66     	; 0x1ea <main+0xba>
+		else if ((pulse_low < 36000) || (pulse_low > 40000))
+ 1a8:	80 91 05 01 	lds	r24, 0x0105
+ 1ac:	90 91 06 01 	lds	r25, 0x0106
+ 1b0:	80 3a       	cpi	r24, 0xA0	; 160
+ 1b2:	9c 48       	sbci	r25, 0x8C	; 140
+ 1b4:	38 f0       	brcs	.+14     	; 0x1c4 <main+0x94>
+ 1b6:	80 91 05 01 	lds	r24, 0x0105
+ 1ba:	90 91 06 01 	lds	r25, 0x0106
+ 1be:	81 34       	cpi	r24, 0x41	; 65
+ 1c0:	9c 49       	sbci	r25, 0x9C	; 156
+ 1c2:	28 f0       	brcs	.+10     	; 0x1ce <main+0x9e>
+			pwm_x2 = 0;
+ 1c4:	10 92 01 01 	sts	0x0101, r1
+ 1c8:	10 92 00 01 	sts	0x0100, r1
+ 1cc:	0e c0       	rjmp	.+28     	; 0x1ea <main+0xba>
+		else
+			//Calculate new PWN duty
+			pwm_x2 = ((pulse_hi - RC_min)  >> 2); // (>> 2) = (div 4) = (2000 div 256)
+ 1ce:	80 91 03 01 	lds	r24, 0x0103
+ 1d2:	90 91 04 01 	lds	r25, 0x0104
+ 1d6:	80 5d       	subi	r24, 0xD0	; 208
+ 1d8:	97 40       	sbci	r25, 0x07	; 7
+ 1da:	96 95       	lsr	r25
+ 1dc:	87 95       	ror	r24
+ 1de:	96 95       	lsr	r25
+ 1e0:	87 95       	ror	r24
+ 1e2:	90 93 01 01 	sts	0x0101, r25
+ 1e6:	80 93 00 01 	sts	0x0100, r24
+			
+		//Check after div
+		if (pwm_x2 > 511)
+ 1ea:	80 91 00 01 	lds	r24, 0x0100
+ 1ee:	90 91 01 01 	lds	r25, 0x0101
+ 1f2:	81 15       	cp	r24, r1
+ 1f4:	92 40       	sbci	r25, 0x02	; 2
+ 1f6:	20 f0       	brcs	.+8      	; 0x200 <main+0xd0>
+			pwm_x2 = 511;
+ 1f8:	30 93 01 01 	sts	0x0101, r19
+ 1fc:	20 93 00 01 	sts	0x0100, r18
+			
+		#if enable_reverse
+			if (pwm_x2 > 255)
+ 200:	80 91 00 01 	lds	r24, 0x0100
+ 204:	90 91 01 01 	lds	r25, 0x0101
+ 208:	8f 3f       	cpi	r24, 0xFF	; 255
+ 20a:	91 05       	cpc	r25, r1
+ 20c:	49 f0       	breq	.+18     	; 0x220 <main+0xf0>
+ 20e:	40 f0       	brcs	.+16     	; 0x220 <main+0xf0>
+			{
+				pwm_hi = pwm_x2 - 256;
+ 210:	80 91 00 01 	lds	r24, 0x0100
+ 214:	90 91 01 01 	lds	r25, 0x0101
+ 218:	80 93 02 01 	sts	0x0102, r24
+				PORTB &= ~(1<<PINB6); //FORWARD
+ 21c:	2e 98       	cbi	0x05, 6	; 5
+ 21e:	08 c0       	rjmp	.+16     	; 0x230 <main+0x100>
+			}
+			else
+			{
+				pwm_hi = 256 - pwm_x2;
+ 220:	80 91 00 01 	lds	r24, 0x0100
+ 224:	90 91 01 01 	lds	r25, 0x0101
+ 228:	81 95       	neg	r24
+ 22a:	80 93 02 01 	sts	0x0102, r24
+				PORTB |= (1<<PINB6); //BACKWARD
+ 22e:	2e 9a       	sbi	0x05, 6	; 5
+		#else
+			pwm_hi = pwm_x2 >> 1; //div 2					
+		#endif
 		
-		//Calculate new PWN duty
-		pwm_hi = ((pulse_hi - 2000) / 8);
- 172:	80 91 02 01 	lds	r24, 0x0102
- 176:	90 91 03 01 	lds	r25, 0x0103
- 17a:	80 5d       	subi	r24, 0xD0	; 208
- 17c:	97 40       	sbci	r25, 0x07	; 7
- 17e:	96 95       	lsr	r25
- 180:	87 95       	ror	r24
- 182:	96 95       	lsr	r25
- 184:	87 95       	ror	r24
- 186:	96 95       	lsr	r25
- 188:	87 95       	ror	r24
- 18a:	90 93 01 01 	sts	0x0101, r25
- 18e:	80 93 00 01 	sts	0x0100, r24
-		
-		if (pwm_hi > 255)
- 192:	80 91 00 01 	lds	r24, 0x0100
- 196:	90 91 01 01 	lds	r25, 0x0101
- 19a:	8f 3f       	cpi	r24, 0xFF	; 255
- 19c:	91 05       	cpc	r25, r1
- 19e:	29 f0       	breq	.+10     	; 0x1aa <main+0x7a>
- 1a0:	20 f0       	brcs	.+8      	; 0x1aa <main+0x7a>
-			pwm_hi = 255;
- 1a2:	30 93 01 01 	sts	0x0101, r19
- 1a6:	20 93 00 01 	sts	0x0100, r18
-		
-		//Check for signal valid (1520 us standard)
-		//Not less 18ms and not longer than 20ms
-		if ((pulse_low < 36000) || (pulse_low > 40000))
- 1aa:	80 91 04 01 	lds	r24, 0x0104
- 1ae:	90 91 05 01 	lds	r25, 0x0105
- 1b2:	80 3a       	cpi	r24, 0xA0	; 160
- 1b4:	9c 48       	sbci	r25, 0x8C	; 140
- 1b6:	38 f0       	brcs	.+14     	; 0x1c6 <main+0x96>
- 1b8:	80 91 04 01 	lds	r24, 0x0104
- 1bc:	90 91 05 01 	lds	r25, 0x0105
- 1c0:	81 34       	cpi	r24, 0x41	; 65
- 1c2:	9c 49       	sbci	r25, 0x9C	; 156
- 1c4:	20 f0       	brcs	.+8      	; 0x1ce <main+0x9e>
-			pwm_hi = 0;
- 1c6:	10 92 01 01 	sts	0x0101, r1
- 1ca:	10 92 00 01 	sts	0x0100, r1
-		
+		//PWM output inverted
 		OCR0A = 255 - pwm_hi;
- 1ce:	80 91 00 01 	lds	r24, 0x0100
- 1d2:	90 91 01 01 	lds	r25, 0x0101
- 1d6:	80 95       	com	r24
- 1d8:	87 bd       	out	0x27, r24	; 39
-		//OCR0A = pulse_hi - 2000;
-
+ 230:	80 91 02 01 	lds	r24, 0x0102
+ 234:	80 95       	com	r24
+ 236:	87 bd       	out	0x27, r24	; 39
     }
- 1da:	ca cf       	rjmp	.-108    	; 0x170 <main+0x40>
+ 238:	9e cf       	rjmp	.-196    	; 0x176 <main+0x46>
 
-000001dc <_exit>:
- 1dc:	f8 94       	cli
+0000023a <_exit>:
+ 23a:	f8 94       	cli
 
-000001de <__stop_program>:
- 1de:	ff cf       	rjmp	.-2      	; 0x1de <__stop_program>
+0000023c <__stop_program>:
+ 23c:	ff cf       	rjmp	.-2      	; 0x23c <__stop_program>

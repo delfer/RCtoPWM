@@ -7,17 +7,29 @@
 
 
 //PWM Output to PB7 OC0A
+//Rotate direction to PB6
 //RC input on PC7 ICP1
+
+
+//***DEFENITIONS***
+//TIMES for 16MHz core in 0.5us
+//Example 2000us equals 4000 ticks
+
+#define RC_min 2000
+#define RC_mid 3000
+#define RC_max 4000
+#define enable_reverse 1
+
+//**END***
 
 #include <avr/io.h>
 #include <avr/wdt.h>
 #include <avr/interrupt.h>
 
-//volatile union twobyte { uint16_t word; uint8_t byte[2]; } mesured_width;
-//volatile uint16_t mesured_width;
 volatile uint16_t pulse_hi;
 volatile uint16_t pulse_low;
-volatile uint16_t pwm_hi;
+volatile uint16_t pwm_x2;
+volatile uint8_t  pwm_hi;
 
 //Interrupt on RC signal lost (timer1 overflow)
 ISR(TIMER1_OVF_vect) {
@@ -27,11 +39,6 @@ ISR(TIMER1_OVF_vect) {
 
 //Interrupt on RC signal edge
 ISR(TIMER1_CAPT_vect) {
-	//Capture current values
-	//mesured_width.byte[0] = ICR1L;	// grab captured timer1 low byte
-	//mesured_width.byte[1] = ICR1H;	// grab captured timer1 high byte
-	//mesured_width = ICR1;
-	
 	//Check state of input
 	if (PINC & (1<<PC7))
 	{
@@ -65,17 +72,11 @@ ISR(TIMER1_CAPT_vect) {
 
 int main(void)
 {
-	//SYSTEM CLOCK
-	//Prescaler div by 1
-	//Enable changing prescaler
-	//CLKPR = (1 << CLKPCE);
-	//Prescaler to 1
-	//CLKPR |= (0 << CLKPS0 ) | (0 << CLKPS1 ) | (0 << CLKPS2 );
-	//Set for max freq
-	//CLKSEL1 = (1 << EXCKSEL0 ) | (1 << EXCKSEL1 ) | (1 << EXCKSEL2 );
-	//Turn on external OSC
-	//CLKSEL0 = (1 << EXTE) | (1 << CLKS);
-
+	//Rotation direction
+	//Out to PB6
+	DDRB |= (1<<PINB6);
+	//Default 0 - forward
+	PORTB &= ~(1<<PINB6);
 	
 	//TIMER0
 	
@@ -91,13 +92,14 @@ int main(void)
 			
 	TCNT0 = 0;
 	
-	//PWM duty 50%
-	OCR0A = 127;
-		
+	//PWM duty 0% (out inverted)
+	OCR0A = 255;
 		
 	//TIMER1
 	//In on PC7 (ICP1)
-	DDRC = 0;
+	DDRC &= ~(1 << PINC7);
+	//Enable internal pull up
+	PORTC |= (1 << PINC7);
 	
 	//Normal mode
 	TCCR1A = 0;
@@ -123,24 +125,47 @@ int main(void)
 	TIFR1 |= (1 << ICF1);
 	
 		
+	//Main program loop
     while(1)
     {
 		//Reset watchdog
 		wdt_reset(); 
 		
-		//Calculate new PWN duty
-		pwm_hi = ((pulse_hi - 2000) / 8);
+		//Calculate RC signal to PWMx2 scale
+		//MIN 1000us -> 0    - full backward for reverse, neutral for noreverse
+		//MID 1500us -> 255  - neutral for reverse, moddle for noreverse
+		//MAX 3000us -> 511  - full forward  (for reverse and not)
+		//check signal for validity
+		if (pulse_hi < RC_min)
+			pwm_x2 = 0;
+		else if (pulse_hi > RC_max)
+			pwm_x2 = 511;
+		else if ((pulse_low < 36000) || (pulse_low > 40000))
+			pwm_x2 = 0;
+		else
+			//Calculate new PWN duty
+			pwm_x2 = ((pulse_hi - RC_min)  >> 2); // (>> 2) = (div 4) = (2000 div 256)
+			
+		//Check after div
+		if (pwm_x2 > 511)
+			pwm_x2 = 511;
+			
+		#if enable_reverse
+			if (pwm_x2 > 255)
+			{
+				pwm_hi = pwm_x2 - 256;
+				PORTB &= ~(1<<PINB6); //FORWARD
+			}
+			else
+			{
+				pwm_hi = 256 - pwm_x2;
+				PORTB |= (1<<PINB6); //BACKWARD
+			}
+		#else
+			pwm_hi = pwm_x2 >> 1; //div 2					
+		#endif
 		
-		if (pwm_hi > 255)
-			pwm_hi = 255;
-		
-		//Check for signal valid (1520 us standard)
-		//Not less 18ms and not longer than 20ms
-		if ((pulse_low < 36000) || (pulse_low > 40000))
-			pwm_hi = 0;
-		
+		//PWM output inverted
 		OCR0A = 255 - pwm_hi;
-		//OCR0A = pulse_hi - 2000;
-
     }
 }
